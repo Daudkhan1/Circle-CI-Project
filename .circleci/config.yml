@@ -8,7 +8,7 @@ jobs:
       - run:
           name: Checkout via SSH
           command: |
-            git clone git@github.com:Daudkhan1-Organization/Circle-CI-Project.git .
+            git clone git@github.com:Daudkhan1/Circle-CI-Project.git .
       - run:
           name: Setup Workspace
           command: |
