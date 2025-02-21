@@ -15,7 +15,7 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - .
+            - "*"
   build_test:
     docker:
       - image: python:3.9-slim
@@ -55,7 +55,7 @@ jobs:
       - image: bitnami/kubectl:latest  # Use Kubernetes CLI
     steps:
       - attach_workspace:
-          at: /home/circleci/project
+          at: /home/circleci/project  # ✅ Ensure this matches setup_workspace
       - run:
           name: Configure KUBECONFIG
           command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
@@ -63,9 +63,8 @@ jobs:
           name: Deploy to Kubernetes
           command: |
             echo "Deploying to Kubernetes..."
+            ls -la /home/circleci/project  # ✅ Debugging: Check if files exist
             kubectl apply -f /home/circleci/project/k8s/deployment.yaml
-
-
 workflows:
   version: 2
   ci_cd_pipeline:
