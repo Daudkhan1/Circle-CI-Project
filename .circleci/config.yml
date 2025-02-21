@@ -1,0 +1,85 @@
+version: 2.1
+
+jobs:
+  setup_workspace:
+    docker:
+      - image: maven:3.8.5-openjdk-11
+    steps:
+      - run:
+          name: Checkout via SSH
+          command: |
+            git clone git@github.com:Daudkhan1-Organization/Circle-CI-Project.git .
+      - run:
+          name: Setup Workspace
+          command: |
+            echo "Setting up workspace..."
+            mkdir -p /home/circleci/project
+            cp -R . /home/circleci/project
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - .
+  build_test:
+    docker:
+      - image: python:3.9-slim
+    steps:
+      - attach_workspace:
+          at: ~/project  # Change to default workspace
+      - run:
+          name: Install Dependencies
+          command: |
+            cd ~/project
+            pip install -r requirements.txt
+      - run:
+          name: Run Tests
+          command: |
+            cd ~/project
+            python -m unittest discover -s tests -p "test_*.py"
+
+
+  build_docker_image:
+    docker:
+      - image: docker:20.10.23  # Docker version for building the image
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Build and Push Docker Image
+          command: |
+            cd /home/circleci/project
+            docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+            docker push daudidrees/nodejswebapp1:latest
+
+  kubernetes_deploy:
+    docker:
+      - image: bitnami/kubectl:latest  # Use Kubernetes CLI
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - run:
+          name: Configure KUBECONFIG
+          command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
+      - run:
+          name: Deploy to Kubernetes
+          command: |
+            echo "Deploying to Kubernetes..."
+            kubectl apply -f /home/circleci/project/k8s/deployment.yaml
+
+
+workflows:
+  version: 2
+  ci_cd_pipeline:
+    jobs:
+      - setup_workspace
+      - build_test:
+          requires:
+            - setup_workspace
+      - build_docker_image:
+          requires:
+            - build_test
+      - kubernetes_deploy:
+          requires:
+            - build_docker_image
