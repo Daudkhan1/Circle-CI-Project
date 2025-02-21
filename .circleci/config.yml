@@ -5,10 +5,7 @@ jobs:
     docker:
       - image: maven:3.8.5-openjdk-11
     steps:
-      - run:
-          name: Checkout via SSH
-          command: |
-            git clone git@github.com:Daudkhan1/Circle-CI-Project.git .
+      - checkout  # ✅ This replaces the manual `git clone`
       - run:
           name: Setup Workspace
           command: |
