@@ -15,7 +15,7 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - "*"  # Ensure all files are saved in workspace
+            - "*"
 
   build_test:
     docker:
@@ -46,34 +46,16 @@ jobs:
           name: Build and Push Docker Image
           command: |
             cd /home/circleci/project
-            docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
+            IMAGE_TAG=latest
+            docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:$IMAGE_TAG .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push daudidrees/nodejswebapp1:latest
-      - run:
-          name: Update Kubernetes Deployment YAML
-          command: |
-            sed -i "s|image: .*|image: daudidrees/nodejswebapp1:latest|" /home/circleci/project/k8s/deployment.yaml
+            docker push daudidrees/nodejswebapp1:$IMAGE_TAG
+            echo "Updating k8s deployment.yaml with new image..."
+            sed -i "s|image: daudidrees/nodejswebapp1:.*|image: daudidrees/nodejswebapp1:$IMAGE_TAG|g" /home/circleci/project/k8s/deployment.yaml
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
             - "*"
-
-  debug_workspace:
-    docker:
-      - image: bitnami/kubectl:latest
-    steps:
-      - run:
-          name: Ensure Workspace Exists
-          command: mkdir -p /tmp/project
-      - attach_workspace:
-          at: /home/circleci/project
-      - run:
-          name: List Workspace Contents
-          command: |
-            echo "Checking if workspace exists..."
-            ls -la /home/circleci
-            echo "Listing contents of /home/circleci/project..."
-            ls -la /home/circleci/project || echo "❌ Workspace directory not found!"
 
 workflows:
   version: 2
@@ -86,6 +68,3 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - debug_workspace:
-          requires:
-            - build_docker_image
