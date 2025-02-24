@@ -49,20 +49,10 @@ jobs:
             docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push daudidrees/nodejswebapp1:latest
-
-  debug_workspace:
-    docker:
-      - image: bitnami/kubectl:latest
-    steps:
-      - attach_workspace:
-          at: /home/circleci/project
-      - run:
-          name: List Workspace Contents
-          command: |
-            echo "Checking workspace existence..."
-            ls -la /home/circleci
-            echo "Listing contents of /home/circleci/project..."
-            ls -la /home/circleci/project || echo "Workspace directory not found!"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - "*"
 
   kubernetes_deploy:
     docker:
