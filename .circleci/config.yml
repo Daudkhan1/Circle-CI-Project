@@ -60,7 +60,7 @@ jobs:
     steps:
       - run:
           name: Ensure Workspace Exists
-          command: mkdir -p /home/circleci/project
+          command: mkdir -p /tmp/project
       - attach_workspace:
           at: /home/circleci/project
       - run:
