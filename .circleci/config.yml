@@ -15,14 +15,14 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - "."  # Fix workspace path
+            - "*"  # Ensure all files are saved in workspace
 
   build_test:
     docker:
       - image: python:3.9-slim
     steps:
       - attach_workspace:
-          at: /home/circleci/project  # Ensure consistent workspace path
+          at: /home/circleci/project
       - run:
           name: Install Dependencies
           command: |
@@ -53,10 +53,14 @@ jobs:
           root: /home/circleci/project
           paths:
             - "*"
+
   debug_workspace:
     docker:
       - image: bitnami/kubectl:latest
     steps:
+      - run:
+          name: Ensure Workspace Exists
+          command: mkdir -p /home/circleci/project
       - attach_workspace:
           at: /home/circleci/project
       - run:
@@ -65,24 +69,23 @@ jobs:
             echo "Checking if workspace exists..."
             ls -la /home/circleci
             echo "Listing contents of /home/circleci/project..."
-            ls -la /home/circleci/project || echo "Workspace directory not found!"
-
+            ls -la /home/circleci/project || echo "❌ Workspace directory not found!"
 
   kubernetes_deploy:
     docker:
       - image: bitnami/kubectl:latest
     steps:
-      - attach_workspace:
-          at: ~/project
       - run:
           name: Ensure Workspace Exists
           command: mkdir -p /home/circleci/project
+      - attach_workspace:
+          at: /home/circleci/project
       - run:
           name: Debug Workspace
           command: |
             echo "Checking workspace contents..."
             ls -la /home/circleci
-            ls -la /home/circleci/project || echo "Workspace directory not found!"
+            ls -la /home/circleci/project || echo "❌ Workspace directory not found!"
       - run:
           name: Configure KUBECONFIG
           command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
@@ -90,8 +93,7 @@ jobs:
           name: Deploy to Kubernetes
           command: |
             echo "Deploying to Kubernetes..."
-            kubectl apply -f ~/project/k8s/deployment.yaml
-
+            kubectl apply -f /home/circleci/project/k8s/deployment.yaml
 
 workflows:
   version: 2
@@ -110,4 +112,3 @@ workflows:
       - kubernetes_deploy:
           requires:
             - debug_workspace
-
