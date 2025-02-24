@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: maven:3.8.5-openjdk-11
     steps:
-      - checkout  # ✅ This replaces the manual `git clone`
+      - checkout
       - run:
           name: Setup Workspace
           command: |
@@ -15,28 +15,28 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - "*"
+            - "."  # Fix workspace path
+
   build_test:
     docker:
       - image: python:3.9-slim
     steps:
       - attach_workspace:
-          at: ~/project  # Change to default workspace
+          at: /home/circleci/project  # Ensure consistent workspace path
       - run:
           name: Install Dependencies
           command: |
-            cd ~/project
+            cd /home/circleci/project
             pip install -r requirements.txt
       - run:
           name: Run Tests
           command: |
-            cd ~/project
+            cd /home/circleci/project
             python -m unittest discover -s tests -p "test_*.py"
-
 
   build_docker_image:
     docker:
-      - image: docker:20.10.23  # Docker version for building the image
+      - image: docker:20.10.23
     steps:
       - attach_workspace:
           at: /home/circleci/project
@@ -49,8 +49,6 @@ jobs:
             docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push daudidrees/nodejswebapp1:latest
-  
-
 
   debug_workspace:
     docker:
@@ -61,24 +59,22 @@ jobs:
       - run:
           name: List Workspace Contents
           command: |
-            echo "Checking if workspace exists..."
+            echo "Checking workspace existence..."
             ls -la /home/circleci
             echo "Listing contents of /home/circleci/project..."
             ls -la /home/circleci/project || echo "Workspace directory not found!"
 
-  
-
   kubernetes_deploy:
     docker:
-      - image: bitnami/kubectl:latest  # Use Kubernetes CLI
+      - image: bitnami/kubectl:latest
     steps:
       - attach_workspace:
-          at: /home/circleci/project  # ✅ Ensure this matches setup_workspace
+          at: /home/circleci/project
       - run:
           name: Debug Workspace
           command: |
             echo "Checking workspace contents..."
-            ls -la /home/circleci/project  # ✅ Debugging: Check if files exist
+            ls -la /home/circleci/project
       - run:
           name: Configure KUBECONFIG
           command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
@@ -99,6 +95,9 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - kubernetes_deploy:
+      - debug_workspace:  # Added debugging job before deployment
           requires:
             - build_docker_image
+      - kubernetes_deploy:
+          requires:
+            - debug_workspace
