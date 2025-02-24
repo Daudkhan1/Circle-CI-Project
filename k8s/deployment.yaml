@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: daudidrees/nodejswebapp1:20250224092723
+        image: daudidrees/nodejswebapp1:20250224092808
         ports:
         - containerPort: 8080
 ---
