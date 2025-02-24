@@ -1,100 +1,57 @@
 version: 2.1
 
 jobs:
-  setup_workspace:
+  build-and-push-docker-image:
     docker:
-      - image: maven:3.8.5-openjdk-11
+      - image: circleci/python:3.8
     steps:
       - checkout
-      - run:
-          name: Setup Workspace
-          command: |
-            echo "Setting up workspace..."
-            mkdir -p /home/circleci/project
-            cp -R . /home/circleci/project
-      - persist_to_workspace:
-          root: /home/circleci/project
-          paths:
-            - "*"
 
-  build_test:
-    docker:
-      - image: python:3.9-slim
-    steps:
-      - attach_workspace:
-          at: /home/circleci/project
-      - run:
-          name: Install Dependencies
-          command: |
-            cd /home/circleci/project
-            pip install -r requirements.txt
-      - run:
-          name: Run Tests
-          command: |
-            cd /home/circleci/project
-            python -m unittest discover -s tests -p "test_*.py"
+      - setup_remote_docker
 
-  build_docker_image:
-    docker:
-      - image: docker:20.10.23
-    steps:
-      - attach_workspace:
-          at: /home/circleci/project
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
-          name: Build and Push Docker Image
+          name: Log in to Docker Hub
           command: |
-            cd /home/circleci/project
-            IMAGE_TAG="daudidrees/nodejswebapp1:$(date +%Y%m%d%H%M%S)"
-            echo "IMAGE_TAG=$IMAGE_TAG" > image_tag.env
-            docker build -t $IMAGE_TAG .
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push $IMAGE_TAG
-      - persist_to_workspace:
-          root: /home/circleci/project
-          paths:
-            - "image_tag.env"
+            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-  update_github:
+      - run:
+          name: Build and push Docker image
+          command: |
+            export IMAGE_NAME=daudidrees/githubaction-flask:${CIRCLE_SHA1}
+            docker build -t $IMAGE_NAME .
+            docker push $IMAGE_NAME
+
+  update-and-push-deployment-manifest:
     docker:
       - image: alpine/git
     steps:
-      - attach_workspace:
-          at: /home/circleci/project
+      - checkout
+
       - run:
-          name: Configure Git
+          name: Skip workflow if triggered by Actions
           command: |
-            cd /home/circleci/project
+            if [[ "$(git log -1 --pretty=%an)" == "github-actions[bot]" ]]; then
+              echo "Skipping workflow as it was triggered by a bot commit."
+              exit 0
+            fi
+
+      - run:
+          name: Update deployment manifest
+          command: |
+            git clone https://github.com/Daudkhan1/cd-cd-gitops.git
+            cd cd-cd-gitops
+            sed -i "s|image: .*|image: daudidrees/githubaction-flask:${CIRCLE_SHA1}|" deployment.yml
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "Daudkhan1"
-            git remote set-url origin https://oauth2:${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project.git
-      - run:
-          name: Update Kubernetes Deployment YAML
-          command: |
-            cd /home/circleci/project
-            IMAGE_TAG=$(cat image_tag.env | cut -d'=' -f2)
-            sed -i "s|image: .*|image: $IMAGE_TAG|" k8s/deployment.yaml
-      - run:
-          name: Commit and Push Changes
-          command: |
-            cd /home/circleci/project
-            git add k8s/deployment.yaml
-            git commit -m "Update deployment image to $IMAGE_TAG" || echo "No changes to commit"
-            git push origin main
-
+            git add deployment.yml
+            git commit -m "Update deployment.yml with build ${CIRCLE_BUILD_NUM}"
+            git push https://${GH_PAT}@github.com/Daudkhan1/cd-cd-gitops.git main
 
 workflows:
   version: 2
-  ci_cd_pipeline:
+  build-deploy:
     jobs:
-      - setup_workspace
-      - build_test:
+      - build-and-push-docker-image
+      - update-and-push-deployment-manifest:
           requires:
-            - setup_workspace
-      - build_docker_image:
-          requires:
-            - build_test
-      - update_github:
-          requires:
-            - build_docker_image
+            - build-and-push-docker-image
