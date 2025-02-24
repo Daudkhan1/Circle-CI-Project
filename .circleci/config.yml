@@ -39,7 +39,7 @@ jobs:
           name: Update deployment manifest
           command: |
             git clone https://github.com/Daudkhan1/Circle-CI-Project.git
-            cd cd-cd-gitops
+            cd Circle-CI-Project
             sed -i "s|image: .*|image: daudidrees/githubaction-flask:${CIRCLE_SHA1}|" deployment.yml
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "Daudkhan1"
