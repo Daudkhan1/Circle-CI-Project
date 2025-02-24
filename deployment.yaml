@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: daudidrees/githubaction-flask:95709fbb35117b01c772af861c6845f58efdee70
+        image: daudidrees/githubaction-flask:5b90059a8faefd260970259b0f4a3fda61eac164
         ports:
         - containerPort: 8080
 ---
