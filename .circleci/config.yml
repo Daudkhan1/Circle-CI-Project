@@ -59,7 +59,7 @@ jobs:
       - image: bitnami/kubectl:latest
     steps:
       - attach_workspace:
-          at: /home/circleci/project
+          at: ~/project
       - run:
           name: Ensure Workspace Exists
           command: mkdir -p /home/circleci/project
@@ -76,7 +76,7 @@ jobs:
           name: Deploy to Kubernetes
           command: |
             echo "Deploying to Kubernetes..."
-            kubectl apply -f /home/circleci/project/k8s/deployment.yaml
+            kubectl apply -f ~/project/k8s/deployment.yaml
 
 
 workflows:
@@ -90,10 +90,6 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - debug_workspace:
-          requires:
-            - build_docker_image
       - kubernetes_deploy:
           requires:
-            - debug_workspace
-
+            - build_docker_image
