@@ -33,8 +33,8 @@ jobs:
             LATEST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
             LATEST_COMMITTER=$(git log -1 --pretty=%an)
 
-            # Stop if the last commit was made by CircleCI or was an automated deployment update
-            if [[ "$LATEST_COMMITTER" == "CircleCI" || "$LATEST_COMMIT_MESSAGE" == *"[skip ci]"* ]]; then
+            # Stop if the last commit was made by CircleCI's automation
+            if [[ "$LATEST_COMMITTER" == "CircleCI" && "$LATEST_COMMIT_MESSAGE" == *"Update deployment.yaml with build"* ]]; then
               echo "Skipping workflow as it was triggered by an automated commit."
               exit 0
             fi
@@ -48,7 +48,7 @@ jobs:
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "CircleCI"
             git add deployment.yaml
-            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM} [skip ci]"
+            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM}"
             git push https://${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project main
 
 workflows:
