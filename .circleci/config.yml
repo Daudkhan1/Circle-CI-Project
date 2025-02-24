@@ -61,10 +61,14 @@ jobs:
       - attach_workspace:
           at: /home/circleci/project
       - run:
+          name: Ensure Workspace Exists
+          command: mkdir -p /home/circleci/project
+      - run:
           name: Debug Workspace
           command: |
             echo "Checking workspace contents..."
-            ls -la /home/circleci/project
+            ls -la /home/circleci
+            ls -la /home/circleci/project || echo "Workspace directory not found!"
       - run:
           name: Configure KUBECONFIG
           command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
@@ -73,6 +77,7 @@ jobs:
           command: |
             echo "Deploying to Kubernetes..."
             kubectl apply -f /home/circleci/project/k8s/deployment.yaml
+
 
 workflows:
   version: 2
