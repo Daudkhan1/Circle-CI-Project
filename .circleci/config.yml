@@ -15,7 +15,7 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - "*"
+            - "*"  # Ensure all files are saved in workspace
 
   build_test:
     docker:
@@ -46,12 +46,17 @@ jobs:
           name: Build and Push Docker Image
           command: |
             cd /home/circleci/project
-            IMAGE_TAG=latest
-            docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:$IMAGE_TAG .
+            IMAGE_TAG="daudidrees/nodejswebapp1:$(date +%Y%m%d%H%M%S)"
+            docker build -t nodejswebapp1 -t $IMAGE_TAG .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push daudidrees/nodejswebapp1:$IMAGE_TAG
-            echo "Updating k8s deployment.yaml with new image..."
-            sed -i "s|image: daudidrees/nodejswebapp1:.*|image: daudidrees/nodejswebapp1:$IMAGE_TAG|g" /home/circleci/project/k8s/deployment.yaml
+            docker push $IMAGE_TAG
+            echo "export IMAGE_TAG=$IMAGE_TAG" >> $BASH_ENV
+      - run:
+          name: Update Kubernetes Deployment File
+          command: |
+            cd /home/circleci/project
+            sed -i "s|image: daudidrees/nodejswebapp1:.*|image: $IMAGE_TAG|" k8s/deployment.yaml
+            cat k8s/deployment.yaml  # Debugging: Show updated file
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
