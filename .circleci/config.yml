@@ -10,10 +10,10 @@ jobs:
           name: Setup Workspace
           command: |
             echo "Setting up workspace..."
-            mkdir -p /tmp/project
-            cp -R . /tmp/project
+            mkdir -p /home/circleci/project
+            cp -R . /home/circleci/project
       - persist_to_workspace:
-          root: /tmp/project
+          root: /home/circleci/project
           paths:
             - "*"  # Ensure all files are saved in workspace
 
@@ -22,16 +22,16 @@ jobs:
       - image: python:3.9-slim
     steps:
       - attach_workspace:
-          at: /tmp/project
+          at: /home/circleci/project
       - run:
           name: Install Dependencies
           command: |
-            cd /tmp/project
+            cd /home/circleci/project
             pip install -r requirements.txt
       - run:
           name: Run Tests
           command: |
-            cd /tmp/project
+            cd /home/circleci/project
             python -m unittest discover -s tests -p "test_*.py"
 
   build_docker_image:
@@ -39,18 +39,22 @@ jobs:
       - image: docker:20.10.23
     steps:
       - attach_workspace:
-          at: /tmp/project
+          at: /home/circleci/project
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
           name: Build and Push Docker Image
           command: |
-            cd /tmp/project
+            cd /home/circleci/project
             docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push daudidrees/nodejswebapp1:latest
+      - run:
+          name: Update Kubernetes Deployment YAML
+          command: |
+            sed -i "s|image: .*|image: daudidrees/nodejswebapp1:latest|" /home/circleci/project/k8s/deployment.yaml
       - persist_to_workspace:
-          root: /tmp/project
+          root: /home/circleci/project
           paths:
             - "*"
 
@@ -62,38 +66,14 @@ jobs:
           name: Ensure Workspace Exists
           command: mkdir -p /tmp/project
       - attach_workspace:
-          at: /tmp/project
+          at: /home/circleci/project
       - run:
           name: List Workspace Contents
           command: |
             echo "Checking if workspace exists..."
-            ls -la /tmp
-            echo "Listing contents of /tmp/project..."
-            ls -la /tmp/project || echo "❌ Workspace directory not found!"
-
-  kubernetes_deploy:
-    docker:
-      - image: bitnami/kubectl:latest
-    steps:
-      - run:
-          name: Ensure Workspace Exists
-          command: mkdir -p /tmp/project
-      - attach_workspace:
-          at: /tmp/project
-      - run:
-          name: Debug Workspace
-          command: |
-            echo "Checking workspace contents..."
-            ls -la /tmp
-            ls -la /tmp/project || echo "❌ Workspace directory not found!"
-      - run:
-          name: Configure KUBECONFIG
-          command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
-      - run:
-          name: Deploy to Kubernetes
-          command: |
-            echo "Deploying to Kubernetes..."
-            kubectl apply -f /tmp/project/k8s/deployment.yaml
+            ls -la /home/circleci
+            echo "Listing contents of /home/circleci/project..."
+            ls -la /home/circleci/project || echo "❌ Workspace directory not found!"
 
 workflows:
   version: 2
@@ -106,9 +86,6 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - debug_workspace:  # ✅ Debug step before deploy
+      - debug_workspace:
           requires:
             - build_docker_image
-      - kubernetes_deploy:
-          requires:
-            - debug_workspace
