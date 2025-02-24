@@ -90,6 +90,10 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - kubernetes_deploy:
+      - debug_workspace:
           requires:
             - build_docker_image
+      - kubernetes_deploy:
+          requires:
+            - debug_workspace
+
