@@ -38,14 +38,14 @@ jobs:
       - run:
           name: Update deployment manifest
           command: |
-            git clone https://github.com/Daudkhan1/cd-cd-gitops.git
+            git clone https://github.com/Daudkhan1/Circle-CI-Project.git
             cd cd-cd-gitops
             sed -i "s|image: .*|image: daudidrees/githubaction-flask:${CIRCLE_SHA1}|" deployment.yml
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "Daudkhan1"
             git add deployment.yml
             git commit -m "Update deployment.yml with build ${CIRCLE_BUILD_NUM}"
-            git push https://${GH_PAT}@github.com/Daudkhan1/cd-cd-gitops.git main
+            git push https://${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project main
 
 workflows:
   version: 2
