@@ -49,6 +49,8 @@ jobs:
             docker build -t nodejswebapp1 -t daudidrees/nodejswebapp1:latest .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push daudidrees/nodejswebapp1:latest
+  
+
 
   debug_workspace:
     docker:
@@ -64,6 +66,27 @@ jobs:
             echo "Listing contents of /home/circleci/project..."
             ls -la /home/circleci/project || echo "Workspace directory not found!"
 
+  
+
+  kubernetes_deploy:
+    docker:
+      - image: bitnami/kubectl:latest  # Use Kubernetes CLI
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project  # ✅ Ensure this matches setup_workspace
+      - run:
+          name: Debug Workspace
+          command: |
+            echo "Checking workspace contents..."
+            ls -la /home/circleci/project  # ✅ Debugging: Check if files exist
+      - run:
+          name: Configure KUBECONFIG
+          command: echo "$KUBECONFIG" | base64 --decode > /root/.kube/config
+      - run:
+          name: Deploy to Kubernetes
+          command: |
+            echo "Deploying to Kubernetes..."
+            kubectl apply -f /home/circleci/project/k8s/deployment.yaml
 
 workflows:
   version: 2
