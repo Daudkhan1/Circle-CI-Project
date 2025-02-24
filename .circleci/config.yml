@@ -50,17 +50,11 @@ jobs:
             docker build -t $IMAGE_TAG .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push $IMAGE_TAG
-            echo "export IMAGE_TAG=$IMAGE_TAG" >> $BASH_ENV
-      - run:
-          name: Update Kubernetes Deployment File
-          command: |
-            cd /home/circleci/project
-            sed -i "s|image: daudidrees/nodejswebapp1:.*|image: $IMAGE_TAG|" k8s/deployment.yaml
-            cat k8s/deployment.yaml  # Debugging: Show updated file
+            echo "IMAGE_TAG=$IMAGE_TAG" >> /home/circleci/project/image_tag.env
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - "*"
+            - "image_tag.env"
 
   update_github:
     docker:
@@ -74,18 +68,20 @@ jobs:
             cd /home/circleci/project
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "Daudkhan1"
-            git config --global credential.helper cache
             git remote set-url origin https://oauth2:${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project.git
-
+      - run:
+          name: Update deployment.yaml
+          command: |
+            cd /home/circleci/project
+            IMAGE_TAG=$(cat image_tag.env | cut -d'=' -f2)
+            sed -i "s|image: .*|image: $IMAGE_TAG|" k8s/deployment.yaml
       - run:
           name: Commit and Push Changes
           command: |
             cd /home/circleci/project
-            git status  # Debugging: Check if there are changes
             git add k8s/deployment.yaml
-            git diff --staged  # Debugging: Show what will be committed
             git commit -m "Update deployment image to $IMAGE_TAG" || echo "No changes to commit"
-            git push origin main || echo "No changes pushed"
+            git push origin main
 
 
 workflows:
