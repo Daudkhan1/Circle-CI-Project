@@ -48,7 +48,7 @@ jobs:
             git config --global user.email "daudidrees1024@gmail.com"
             git config --global user.name "CircleCI"
             git add deployment.yaml
-            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM}"
+            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM} [skip ci]"
             git push https://${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project main
 
 workflows:
