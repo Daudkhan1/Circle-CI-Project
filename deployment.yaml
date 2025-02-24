@@ -18,7 +18,7 @@ spec:
       - name: flask-app
         image: daudidrees/circleci:5c264c57bdeed9c5cae1c80cd4d82056879c1db0
         ports:
-        - containerPort: 8080
+        - containerPort: 5000
 ---
 apiVersion: v1
 kind: Service
@@ -32,5 +32,5 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8080
+      targetPort: 5000
   type: NodePort  # Change to LoadBalancer if using a cloud provider
