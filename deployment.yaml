@@ -15,10 +15,12 @@ spec:
         app: flask-app
     spec:
       containers:
-      - name: flask-app
-        image: daudidrees/circleci:d357ebc1e59bb86eebc3aeedb3a07616d89e0563
-        ports:
-        - containerPort: 8080
+        - name: flask-app
+          image: daudidrees/circleci:d357ebc1e59bb86eebc3aeedb3a07616d89e0563
+          ports:
+            - containerPort: 8080
+          imagePullPolicy: Always  # Ensures the latest image is pulled
+
 ---
 apiVersion: v1
 kind: Service
@@ -34,4 +36,3 @@ spec:
       port: 80
       targetPort: 8080
   type: NodePort  # Change to LoadBalancer if using a cloud provider
-
