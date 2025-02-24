@@ -85,9 +85,6 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - debug_workspace:  # Added debugging job before deployment
-          requires:
-            - build_docker_image
       - kubernetes_deploy:
           requires:
-            - debug_workspace
+            - build_docker_image
