@@ -47,10 +47,10 @@ jobs:
           command: |
             cd /home/circleci/project
             IMAGE_TAG="daudidrees/nodejswebapp1:$(date +%Y%m%d%H%M%S)"
+            echo "IMAGE_TAG=$IMAGE_TAG" > image_tag.env
             docker build -t $IMAGE_TAG .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push $IMAGE_TAG
-            echo "IMAGE_TAG=$IMAGE_TAG" >> /home/circleci/project/image_tag.env
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
@@ -70,7 +70,7 @@ jobs:
             git config --global user.name "Daudkhan1"
             git remote set-url origin https://oauth2:${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project.git
       - run:
-          name: Update deployment.yaml
+          name: Update Kubernetes Deployment YAML
           command: |
             cd /home/circleci/project
             IMAGE_TAG=$(cat image_tag.env | cut -d'=' -f2)
