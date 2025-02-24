@@ -53,6 +53,20 @@ jobs:
           root: /home/circleci/project
           paths:
             - "*"
+  debug_workspace:
+    docker:
+      - image: bitnami/kubectl:latest
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - run:
+          name: List Workspace Contents
+          command: |
+            echo "Checking if workspace exists..."
+            ls -la /home/circleci
+            echo "Listing contents of /home/circleci/project..."
+            ls -la /home/circleci/project || echo "Workspace directory not found!"
+
 
   kubernetes_deploy:
     docker:
@@ -90,6 +104,10 @@ workflows:
       - build_docker_image:
           requires:
             - build_test
-      - kubernetes_deploy:
+      - debug_workspace:  # ✅ Add debug step before deploy
           requires:
             - build_docker_image
+      - kubernetes_deploy:
+          requires:
+            - debug_workspace
+
