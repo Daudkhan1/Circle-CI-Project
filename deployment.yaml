@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: daudidrees/circleci:b054509796f9bd5c5961f8f2c2860dff0bb94cf9
+        image: daudidrees/circleci:70456c7e7cc39de35377ad44e5f1fdc2c65bebdb
         ports:
         - containerPort: 8080
 ---
