@@ -30,9 +30,9 @@ jobs:
       - run:
           name: Prevent Infinite Loop from Deployment Updates
           command: |
-            LATEST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-            if [[ "$LATEST_COMMIT_MESSAGE" == *"[skip ci]"* ]]; then
-              echo "Skipping workflow as this commit is auto-generated."
+            LATEST_COMMITTER=$(git log -1 --pretty=%an)
+            if [[ "$LATEST_COMMITTER" == "CircleCI" || "$LATEST_COMMITTER" == "github-actions[bot]" ]]; then
+              echo "Skipping workflow as it was triggered by an automated commit."
               exit 0
             fi
 
@@ -43,9 +43,9 @@ jobs:
             cd Circle-CI-Project
             sed -i "s|image: .*|image: daudidrees/circleci:${CIRCLE_SHA1}|" deployment.yaml
             git config --global user.email "daudidrees1024@gmail.com"
-            git config --global user.name "Daudkhan1"
+            git config --global user.name "CircleCI"
             git add deployment.yaml
-            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM} [skip ci]"
+            git commit -m "Update deployment.yaml with build ${CIRCLE_BUILD_NUM}"
             git push https://${GITHUB_TOKEN}@github.com/Daudkhan1/Circle-CI-Project main
 
 workflows:
